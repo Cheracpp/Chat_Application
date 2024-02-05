@@ -1,53 +1,47 @@
 package com.aymane.quickchat.server;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.aymane.quickchat.model.Message;
+import com.aymane.quickchat.utils.Serialization;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ClientHandler implements Runnable {
+public class ClientHandler {
     private final Socket clientSocket;
-    private final ChatServer chatServer;
-    private String clientId;
+    private final String ClientName;
     private final PrintWriter writer;
     private static final Map<String, PrintWriter> clients = new ConcurrentHashMap<>();
 
 
-    public ClientHandler(Socket clientSocket, ChatServer chatServer) {
+    public ClientHandler(Socket clientSocket, String ClientName) {
         this.clientSocket = clientSocket;
-        this.chatServer = chatServer;
+        this.ClientName = ClientName;
         try {
             this.writer = new PrintWriter(clientSocket.getOutputStream(), true);
+            clients.put(ClientName, writer);
         } catch (IOException e) {
             throw new RuntimeException("Failed to create PrintWriter: " + e.getMessage(), e);
         }
     }
 
-    @Override
-    public void run() {
+    public void start() {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-            String message;
-            while ((message = reader.readLine()) != null) {
-                JsonObject jsonObject = JsonParser.parseString(message).getAsJsonObject();
-                String type = jsonObject.get("type").getAsString();
-
+            String json;
+            while ((json = reader.readLine()) != null) {
+                Message message = Serialization.deserializeJsonToMessage(json);
+                String type = message.getType();
                 switch (type) {
                     case "connect":
-                        handleConnectMessage(jsonObject);
+                        handleConnectMessage(message);
                         break;
                     case "message":
-                        handleMessage(jsonObject);
+                        handleMessage(message);
                         break;
                     case "disconnect":
-                        handleDisconnectMessage(jsonObject);
+                        handleDisconnectMessage(message);
                         break;
                     default:
                         System.out.println("Unknown message type: " + type);
@@ -59,8 +53,8 @@ public class ClientHandler implements Runnable {
             System.out.println("Error reading from client: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            if (clientId != null) {
-                clients.remove(clientId);
+            if (ClientName != null) {
+                clients.remove(ClientName);
             }
             try {
                 clientSocket.close();
@@ -71,35 +65,26 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    public void handleConnectMessage(JsonObject jsonObject) {
-        this.clientId = jsonObject.get("sender").getAsString();
-        clients.put(clientId, writer);
-        System.out.println(clientId + " has connected.");
+    public void handleConnectMessage(Message message) {
+        clients.put(ClientName, writer);
+        System.out.println(ClientName + " has connected.");
     }
 
 
-    public void handleMessage(JsonObject jsonObject) {
-        String sender = jsonObject.get("sender").getAsString();
-        String content = jsonObject.get("content").getAsString();
-        String timestamp = jsonObject.get("timestamp").getAsString();
-
-        System.out.println("[" + timestamp + "] " + sender + ": " + content);
+    public void handleMessage(Message message) {
+        System.out.println(message);
+        String json = Serialization.serializeMessageToJson(message);
 
         for (Map.Entry<String, PrintWriter> entry : clients.entrySet()) {
-            if (!entry.getKey().equals(sender)) {
-                entry.getValue().println("[" + timestamp + "] " + sender + ": " + content);
+            if (!entry.getKey().equals(ClientName)) {
+                entry.getValue().println(json);
             }
         }
     }
 
-    public void handleDisconnectMessage(JsonObject jsonObject) {
-        String sender = jsonObject.get("sender").getAsString();
+    public void handleDisconnectMessage(Message message) {
+        String sender = message.getSender();
         clients.remove(sender);
         System.out.println(sender + " has disconnected.");
     }
-
-    public void sendMessage(String message) {
-        writer.println(message);
-    }
-
 }
