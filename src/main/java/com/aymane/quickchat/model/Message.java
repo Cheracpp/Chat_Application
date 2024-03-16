@@ -1,13 +1,17 @@
 package com.aymane.quickchat.model;
 
+import java.sql.Timestamp;
+
 public class Message {
     private String type;
     private String sender;
     private String content;
-    private String timestamp;
+    private Timestamp timestamp;
+    private int messageId;
 
     // Constructor, getters, and setters
-    public Message(String type, String sender, String content, String timestamp) {
+    public Message(){};
+    public Message(String type, String sender, String content, Timestamp timestamp) {
         this.type = type;
         this.sender = sender;
         this.content = content;
@@ -29,6 +33,14 @@ public class Message {
     public void setSender(String sender) {
         this.sender = sender;
     }
+    public void setMessageId(int messageId) {
+        this.messageId = messageId;
+    }
+    public int setMessageId() {
+        return this.messageId;
+    }
+
+
 
     public String getContent() {
         return content;
@@ -38,18 +50,20 @@ public class Message {
         this.content = content;
     }
 
-    public String getTimestamp() {
+    public Timestamp getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(Timestamp timestamp) {
         this.timestamp = timestamp;
     }
+
+
 
     // toString method for printing
     @Override
     public String toString() {
-        return "[" + this.timestamp + "] " + this.sender + ": " + this.content;
+        return "[" + this.timestamp.toString() + "] " + this.sender + ": " + this.content;
     }
 }
 

@@ -1,18 +1,18 @@
 package com.aymane.quickchat.client;
 
 import com.aymane.quickchat.utils.Serialization;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import java.io.*;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Objects;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Scanner;
 
-public class ChatClient {
-    private Socket socket;
+
+public class ChatClient implements Authenticator {
+    private SSLSocket sslSocket;
     private String username;
     private PrintWriter writer;
     private BufferedReader reader;
@@ -22,42 +22,46 @@ public class ChatClient {
     public ChatClient(String hostname, int port) {
 
         try {
-            this.socket = new Socket(hostname, port);
-            this.writer = new PrintWriter(socket.getOutputStream(), true);
-            this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String trustStorePath = "/clienttruststore.p12";
+            InputStream trustStoreStream = getClass().getResourceAsStream(trustStorePath);
+            if (trustStoreStream == null) {
+                throw new FileNotFoundException("Could not find the truststore file in the resources.");
+            }
+
+            File tempTrustStore = File.createTempFile("clienttruststore", ".p12");
+            try (FileOutputStream out = new FileOutputStream(tempTrustStore)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = trustStoreStream.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+            }
+
+            System.setProperty("javax.net.ssl.trustStore", tempTrustStore.getAbsolutePath());
+            String trustStorePassword = System.getenv("TRUSTSTORE_PASSWORD");
+            if (trustStorePassword == null || trustStorePassword.isEmpty()) {
+                trustStorePassword = "quickchat"; // You should prompt the user or load from a secure location
+            }
+            System.setProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            this.sslSocket = (SSLSocket) factory.createSocket(hostname, port);
+            this.writer = new PrintWriter(sslSocket.getOutputStream(), true);
+            this.reader = new BufferedReader(new InputStreamReader(sslSocket.getInputStream()));
             this.scanner = new Scanner(System.in);
         } catch (IOException e) {
             System.out.println("Could not connect to the server");
             e.printStackTrace();
         }
     }
-
-    public void start() {
-            String serverMessage;
-            String clientMessage;
-            while (!Objects.equals(serverMessage = readMessage(), "success")) {
-                System.out.println(serverMessage);
-                if(!serverMessage.contains("Enter") && !serverMessage.contains("Confirm") && !serverMessage.contains("Reconfirm") ){
-
-                }else{
-                    clientMessage = scanner.nextLine();
-                    if (Objects.equals(serverMessage, "Enter your username")) {
-                        this.username = clientMessage;
-                    }
-                    writer.println(clientMessage);
-                }
-            }
-        System.out.println("Connected to the chat server");
-        new Thread(new MessageReceiver(this.socket)).start();
-
-        while (true) {
-            String content = scanner.nextLine();
-            String timestamp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(new Date());
-            sendMessage(username, content, timestamp);
-        }
+    @Override
+    public void startAuthentication(String username, String password, String authType){
+        this.username = username;
+        Timestamp timestamp = Timestamp.valueOf(LocalDateTime.now());
+        String message = Serialization.createMessageJson(authType,username,password,timestamp);
+        writer.println(message);
     }
 
-    public void sendMessage(String sender, String content, String timestamp) {
+    public void sendMessage(String sender, String content, Timestamp timestamp) {
         String message = Serialization.createMessageJson("message",sender,content,timestamp);
         writer.println(message);
     }
@@ -77,8 +81,6 @@ public class ChatClient {
     // Handle errors during reading
     private void handleReadError(IOException e) {
         System.err.println("Error reading from server: " + e.getMessage());
-        // Implement additional error recovery or logging here
-        // Consider reconnecting or notifying the user
     }
 
 

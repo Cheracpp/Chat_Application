@@ -1,0 +1,69 @@
+/* General application background */
+.root {
+    -fx-background-color: #f3f4f6;
+    -fx-font-family: 'Roboto', sans-serif;
+}
+
+/* Text fields and password fields styling */
+.text-field, .password-field {
+    -fx-background-color: #CCCCCC; /* Transparent where the icon is, white elsewhere */
+    -fx-background-radius: 5, 5; /* Rounded corners for both layers */
+    -fx-padding: 0 0 0 40; /* Adjusted padding: top right bottom left */
+    -fx-prompt-text-fill: #9092a1; /* Placeholder text color */
+    -fx-font-size: 12pt; /* Font size */
+    -fx-font-family: 'Roboto';
+    -fx-font-weight: 400;
+    -fx-min-height: 50px; /* Minimum height for the text fields */
+    -fx-min-width: 100px; /* Minimum width for the text fields */
+    -fx-max-width: 350px;
+    -fx-border-color: #CCCCCC; /* Border color */
+    -fx-border-width: 2; /* Border width */
+    -fx-border-radius: 5; /* Match border radius to background */
+    -fx-effect: dropshadow(gaussian, rgba(160, 160, 160, 0.8), 10, 0, 0, 0); /* Soft gray glow */
+
+}
+
+.text-field:focused, .password-field:focused {
+    -fx-effect: innershadow(gaussian, rgb(65, 65, 65), 10, 0, 0, 0); /* Soft gray glow */
+}
+
+/* Buttons styling */
+.button {
+    -fx-background-color: #414141;
+    -fx-text-fill: #c4c4c4;
+    -fx-font-size: 12pt;
+    -fx-font-family: 'Roboto';
+    -fx-font-weight: 500;
+    -fx-min-height: 50px; /* Adjust button height */
+    -fx-min-width: 100px; /* Adjust button width */
+    -fx-max-width: 350px;
+    -fx-background-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgb(65, 64, 65), 10, 0, 0, 0); /* Soft gray glow */
+}
+
+.button:hover {
+    -fx-background-color: rgb(124, 124, 124);
+}
+
+.label {
+    -fx-font-size: 12pt;
+    -fx-font-family: 'Roboto';
+    -fx-text-fill: #414141;
+    -fx-font-weight: 400;
+}
+
+.buttonWithoutBox {
+    -fx-font-size: 12pt;
+    -fx-font-family: 'Roboto';
+    -fx-text-fill: #9092a1;
+    -fx-font-weight: 500;
+}
+
+.buttonWithoutBox:hover {
+    -fx-underline: true;
+    -fx-text-fill: #686868; /* Or any other color that indicates interactivity */
+}
+
+
+
+

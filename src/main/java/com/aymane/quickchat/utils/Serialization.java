@@ -2,6 +2,8 @@ package com.aymane.quickchat.utils;
 import com.aymane.quickchat.model.Message;
 import com.google.gson.Gson;
 
+import java.sql.Timestamp;
+
 
 public class Serialization {
 
@@ -18,7 +20,7 @@ public class Serialization {
     }
 
     // Example method to create a Message object from components
-    public static String createMessageJson(String type, String sender, String content, String timestamp) {
+    public static String createMessageJson(String type, String sender, String content, Timestamp timestamp) {
         Message message = new Message(type, sender, content, timestamp);
         return serializeMessageToJson(message);
     }
